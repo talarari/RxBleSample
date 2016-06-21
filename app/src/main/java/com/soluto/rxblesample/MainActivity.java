@@ -18,6 +18,9 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 
 @SuppressWarnings("ALL")
 public class MainActivity extends AppCompatActivity {
@@ -27,11 +30,17 @@ public class MainActivity extends AppCompatActivity {
     BluetoothLeScanner scanner;
 
     private ScanCallback solutoDeviceScanCallback = new ScanCallback() {
+
+        private HashSet<String> foundAlready = new HashSet<>();
+
         @Override
         public void onScanResult(int callbackType, ScanResult result) {
             String name = result.getDevice().getName() == null ? " " : result.getDevice().getName().toLowerCase();
 
-            if (name.contains("soluto")){ // filter logic
+            if (name.contains("soluto") && // filter logic
+                    !foundAlready.contains(name)){ // distinct logic
+
+                foundAlready.add(name); // more distinct logic
                 addDeviceToList(name); // ui logic
             }
         }
