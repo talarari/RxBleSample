@@ -18,9 +18,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 
 @SuppressWarnings("ALL")
 public class MainActivity extends AppCompatActivity {
@@ -37,11 +35,10 @@ public class MainActivity extends AppCompatActivity {
         public void onScanResult(int callbackType, ScanResult result) {
             String name = result.getDevice().getName() == null ? " " : result.getDevice().getName().toLowerCase();
 
-            if (name.contains("soluto") && // filter logic
-                    !foundAlready.contains(name)){ // distinct logic
+            if (name.contains("soluto") && /*filter logic*/ !foundAlready.contains(name)){ // distinct logic
+                    foundAlready.add(name); // more distinct logic
 
-                foundAlready.add(name); // more distinct logic
-                addDeviceToList(name); // ui logic
+                addDeviceToView(name); // ui logic
             }
         }
     };
@@ -52,35 +49,29 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         adapter = new ArrayAdapter<>(this, R.layout.device_scan_result, R.id.textViewItem, foundDevices);
-         scanner = BluetoothAdapter.getDefaultAdapter().getBluetoothLeScanner();
+        scanner = BluetoothAdapter.getDefaultAdapter().getBluetoothLeScanner();
+        if (scanner == null) return;
 
 
         ListView devicesList = initDeviceView();
         View scanButton = findViewById(R.id.scan);
-        TextView selectedDevice = (TextView) findViewById(R.id.selectedDevice);
-
 
 
         // also stop scanning when user selects a device
         devicesList.setOnItemClickListener((adapterView, view, i, l) -> {
             scanButton.setBackgroundColor(Color.GRAY);
             scanner.stopScan(solutoDeviceScanCallback);
-
-            String name = (String) adapterView.getAdapter().getItem(i);
-            selectedDevice.setText(name);
-
-
         });
 
 
         // setup scan button to start scan with callback instance
         scanButton.setOnClickListener(view -> {
             requestLocationPermission();
-
             clearDeviceList();
 
             // show indication that we're scanning
             scanButton.setBackgroundColor(Color.GREEN);
+
             scanner.startScan(solutoDeviceScanCallback);
 
             // set a time to stop scanning in 5 seconds
@@ -99,7 +90,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // utils
-    private  void addDeviceToList(String name){
+    private  void addDeviceToView(String name){
         foundDevices.add(name);
         adapter.notifyDataSetChanged();
 

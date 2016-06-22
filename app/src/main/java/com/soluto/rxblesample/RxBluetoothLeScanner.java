@@ -30,6 +30,11 @@ public class RxBluetoothLeScanner {
                 // getting android scanner
                 BluetoothLeScanner scanner = BluetoothAdapter.getDefaultAdapter().getBluetoothLeScanner();
 
+                if (scanner == null) {
+                    subscriber.onError(new Exception("bluetooth is disabled"));
+                    return;
+                }
+
                 // create android bluetooth scan callback instance
                 ScanCallback scanCallback = new ScanCallback() {
                     @Override
