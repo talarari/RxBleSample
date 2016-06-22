@@ -31,9 +31,27 @@ import rx.functions.Action1;
 @SuppressWarnings("ALL")
 public class MainRxActivity  extends AppCompatActivity {
 
-    ArrayList<String> foundDevices = new ArrayList<>();
-    ArrayAdapter<String> adapter;
+    private void scanForDevices(){
+        Observable<AdapterViewItemClickEvent> deviceSelected = RxAdapterView.itemClickEvents(devicesList);
+        Observable<Long> timeout = Observable.timer(5,TimeUnit.SECONDS);
 
+        // using RxAndroid utilities to get click stream from scan button
+        RxView.clicks(scanButton)
+                .doOnNext(__ -> {
+                    // clear device list
+                    clearDeviceList();
+                    // show scanning indication
+                    scanButton.setBackgroundColor(Color.GREEN);
+                })
+                .flatMap(__-> RxBluetoothLeScanner.startScan() // start scanning using our wrapper
+                        .map(scanResult -> scanResult.getDevice()) // only need the device
+                        .filter(device-> device.getName().toLowerCase().contains("soluto")) //only soluto devices
+                )
+                .subscribe(device->{
+                    // add name to device view
+                    addDeviceToView(device.getName());
+                });
+    }
 
     @Override
     protected void onCreate( Bundle savedInstanceState) {
@@ -42,34 +60,41 @@ public class MainRxActivity  extends AppCompatActivity {
         adapter =new ArrayAdapter<>(this, R.layout.device_scan_result, R.id.textViewItem, foundDevices);
 
         // set   device list view
-        ListView devicesList = initDeviceView();
-        View scanButton = findViewById(R.id.scan);
+        devicesList = initDeviceView();
+        scanButton = findViewById(R.id.scan);
+
+        scanForDevices();
 
 
-        Observable<AdapterViewItemClickEvent> deviceSelected = RxAdapterView.itemClickEvents(devicesList);
-        Observable<Long> timeout = Observable.timer(5,TimeUnit.SECONDS);
-
-
-        RxView.clicks(scanButton)
-                .doOnNext(__ -> {
-                    clearDeviceList();
-                    scanButton.setBackgroundColor(Color.GREEN);
-                })
-                .flatMap(__-> RxBluetoothLeScanner.startScan()
-                        .map(scanResult -> scanResult.getDevice())
-                        .filter(device-> device.getName().toLowerCase().contains("soluto"))
-                        .distinct(device-> device.getName())
-                        .takeUntil(deviceSelected)
-                        .takeUntil(timeout)
-                        .observeOn(AndroidSchedulers.mainThread())
-                        .doOnCompleted(() ->scanButton.setBackgroundColor(Color.GRAY))
-                )
-                .subscribe(device->{
-                    addDeviceToView(device.getName());
-                },ex -> {
-                    Log.e("MainRxActivity","oh no",ex);
-                });
+//        Observable<AdapterViewItemClickEvent> deviceSelected = RxAdapterView.itemClickEvents(devicesList);
+//        Observable<Long> timeout = Observable.timer(5,TimeUnit.SECONDS);
+//
+//
+//        RxView.clicks(scanButton)
+//                .doOnNext(__ -> {
+//                    clearDeviceList();
+//                    scanButton.setBackgroundColor(Color.GREEN);
+//                })
+//                .flatMap(__-> RxBluetoothLeScanner.startScan()
+//                        .map(scanResult -> scanResult.getDevice())
+//                        .filter(device-> device.getName().toLowerCase().contains("soluto"))
+//                        .distinct(device-> device.getName())
+//                        .takeUntil(deviceSelected)
+//                        .takeUntil(timeout)
+//                        .observeOn(AndroidSchedulers.mainThread())
+//                        .doOnCompleted(() ->scanButton.setBackgroundColor(Color.GRAY))
+//                )
+//                .subscribe(device->{
+//                    addDeviceToView(device.getName());
+//                },ex -> {
+//                    Log.e("MainRxActivity","oh no",ex);
+//                });
     }
+
+    ArrayList<String> foundDevices = new ArrayList<>();
+    ArrayAdapter<String> adapter;
+    ListView devicesList;
+    View scanButton;
 
     private  void addDeviceToView(String name){
         foundDevices.add(name);
